@@ -1,7 +1,7 @@
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-class LRUCacheWithLinkedHashMap {
+public class LRUCacheWithLinkedHashMap {
 
 	public static void main(String[] args)
 	{
