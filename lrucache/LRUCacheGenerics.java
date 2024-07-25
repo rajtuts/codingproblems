@@ -1,6 +1,6 @@
 /**
  * Data-Structures-In-Java
- * LRUCache.java
+ * LRUCacheGenerics.java
  */
 
 import java.util.HashMap;
@@ -9,7 +9,7 @@ import java.util.HashMap;
  * Custom implementation of LRU cache
  * 
  */
-public class LRUCache<K, V> {
+public class LRUCacheGenerics<K, V> {
 
 	/**
 	 * HashMap for cache
