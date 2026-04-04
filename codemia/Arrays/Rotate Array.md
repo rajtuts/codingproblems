@@ -18,12 +18,12 @@ The reversal algorithm is an elegant O(1) space solution.
 `Reverse 3..6: [5, 6, 7, 1, 2, 3, 4] ← Result!`    
 
 **Why it works:**  
--   Reversing all puts elements in opposite order
--   Reversing first k "un-reverses" them, putting the last k elements at the front
--   Reversing the rest fixes the original first (n-k) elements
+-   Reversing all puts elements in opposite order  
+-   Reversing first k "un-reverses" them, putting the last k elements at the front  
+-   Reversing the rest fixes the original first (n-k) elements  
 **Edge Cases:**  
--   k > n: Use k = k % n (rotating by n is a full cycle)
--   k = 0: No rotation needed
+-   k > n: Use k = k % n (rotating by n is a full cycle)  
+-   k = 0: No rotation needed  
 **Time Complexity:** O(n) - each element moved twice **Space Complexity:** O(1) - in-place reversal
 **Time: O(n)**   **Space: O(1)**  
 ```
