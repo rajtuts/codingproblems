@@ -12,10 +12,10 @@ The reversal algorithm is an elegant O(1) space solution.
 2.  Reverse the first k elements
 3.  Reverse the remaining n-k elements
 **Example: \[1,2,3,4,5,6,7\], k=3**  
-`Original: [1, 2, 3, 4, 5, 6, 7]    
-Reverse all: [7, 6, 5, 4, 3, 2, 1]    
-Reverse 0..2: [5, 6, 7, 4, 3, 2, 1]    
-Reverse 3..6: [5, 6, 7, 1, 2, 3, 4] ← Result!`  
+`Original: [1, 2, 3, 4, 5, 6, 7]'    
+'Reverse all: [7, 6, 5, 4, 3, 2, 1]'    
+'Reverse 0..2: [5, 6, 7, 4, 3, 2, 1]'    
+'Reverse 3..6: [5, 6, 7, 1, 2, 3, 4] ← Result!`  
 **Why it works:**  
 -   Reversing all puts elements in opposite order
 -   Reversing first k "un-reverses" them, putting the last k elements at the front
