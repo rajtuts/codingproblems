@@ -5,10 +5,10 @@ Given an array of words and a maxWidth, format the text such that each line has 
 Input: {"words":["This","is","an","example","of","text","justification."],"maxWidth":16}  
 Output: ["This is an","example of text","justification. "]  
 
-## Greedily pack words into lines. For full lines, distribute extra spaces evenly with more on left. Last line is left-justified.
+**Greedily pack words into lines. For full lines, distribute extra spaces evenly with more on left. Last line is left-justified.**  
 
-## Time: O(n)
-## Space: O(maxWidth)
+**Time: O(n)**  
+**Space: O(maxWidth)** 
 
 ```
 class Solution {
