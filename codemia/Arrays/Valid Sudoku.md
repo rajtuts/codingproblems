@@ -37,10 +37,10 @@ Output: true
 -   row 4 set: add "3"
 -   col 7 set: add "3"    
 -   box (4//3)_3 + (7//3) = 1_3 + 2 = 5: add "3"
--   If any already contains "3": invalid
-**Time Complexity:** O(81) = O(1) - fixed 9×9 board **Space Complexity:** O(81) = O(1) - 27 sets of at most 9 elements
-**Time: O(81)**
-**Space: O(81)**
+-   If any already contains "3": invalid  
+**Time Complexity:** O(81) = O(1) - fixed 9×9 board **Space Complexity:** O(81) = O(1) - 27 sets of at most 9 elements  
+**Time: O(81)**  
+**Space: O(81)**  
 
 ```
 class Solution {
