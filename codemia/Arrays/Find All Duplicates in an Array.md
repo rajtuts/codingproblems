@@ -22,7 +22,7 @@ Output: [2,3]
 `num=8: index=7, nums[7]=1>0, negate → [4,-3,-2,-7,8,2,-3,-1]`   
 `num=2: index=1, nums[1]=-3<0, DUPLICATE! Add 2`   
 `num=-3: index=2, nums[2]=-2<0, DUPLICATE! Add 3`   
-`num=-1: index=0, nums[0]=4>0, negate → [-4,-3,-2,-7,8,2,-3,-1] Result: [2, 3] ✓`
+`num=-1: index=0, nums[0]=4>0, negate → [-4,-3,-2,-7,8,2,-3,-1] Result: [2, 3] ✓`  
 **Why This Works:**  
 -   Each number maps to unique index (value-1)    
 -   First visit: negate to mark      
