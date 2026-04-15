@@ -1,4 +1,4 @@
-#Find Minimum in Rotated Sorted Array
+# Find Minimum in Rotated Sorted Array  
 Suppose an array of length n sorted in ascending order is rotated between 1 and n times. Find the minimum element of this array.
 
 Example 1:
