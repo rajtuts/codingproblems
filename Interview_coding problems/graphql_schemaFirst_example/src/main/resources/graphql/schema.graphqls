@@ -1,0 +1,35 @@
+type Query {
+  hello(name: String = "world"): String!
+  userById(id: ID!): User
+  users(first: Int = 10, after: String): UserConnection!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+}
+
+type User {
+  id: ID!
+  email: String!
+  displayName: String!
+}
+
+input CreateUserInput {
+  email: String!
+  displayName: String!
+}
+
+type UserConnection {
+  edges: [UserEdge!]!
+  pageInfo: PageInfo!
+}
+
+type UserEdge {
+  cursor: String!
+  node: User!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+}
