@@ -1,0 +1,60 @@
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    tags:
+      application: resilience-demo
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 500ms
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 5s
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - java.io.IOException
+          - java.net.SocketTimeoutException
+        ignoreExceptions:
+          - com.example.resilience.client.BadRequestException
+    instances:
+      downstreamService:
+        baseConfig: default
+
+  bulkhead:
+    instances:
+      downstreamService:
+        maxConcurrentCalls: 20
+        maxWaitDuration: 50ms
+
+  timelimiter:
+    instances:
+      downstreamService:
+        timeoutDuration: 800ms
+        cancelRunningFuture: true
+
+# Optional: thread-pool bulkhead for async isolation (use instead of semaphore bulkhead)
+# resilience4j:
+#   thread-pool-bulkhead:
+#     instances:
+#       downstreamService:
+#         coreThreadPoolSize: 10
+#         maxThreadPoolSize: 10
+#         queueCapacity: 50
+#         keepAliveDuration: 20ms
+
+logging:
+  level:
+    io.github.resilience4j: INFO
+    com.example.resilience: INFO
