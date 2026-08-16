@@ -1,0 +1,107 @@
+databaseChangeLog:
+  - property:
+      name: schemaName
+      value: app
+
+  - changeSet:
+      id: 001-create-customer-table
+      author: dev
+      labels: core,baseline
+      context: dev,qa,prod
+      preConditions:
+        onFail: HALT
+        onError: HALT
+        - not:
+            tableExists:
+              schemaName: ${schemaName}
+              tableName: customer
+      changes:
+        - createTable:
+            schemaName: ${schemaName}
+            tableName: customer
+            remarks: Customer master table
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropTable:
+            schemaName: ${schemaName}
+            tableName: customer
+
+  - changeSet:
+      id: 002-add-status-column-safe-rerun
+      author: dev
+      labels: core
+      context: dev,qa,prod
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - tableExists:
+            schemaName: ${schemaName}
+            tableName: customer
+        - not:
+            columnExists:
+              schemaName: ${schemaName}
+              tableName: customer
+              columnName: status
+      changes:
+        - addColumn:
+            schemaName: ${schemaName}
+            tableName: customer
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropColumn:
+            schemaName: ${schemaName}
+            tableName: customer
+            columnName: status
+
+  - changeSet:
+      id: 003-dev-only-seed-data
+      author: dev
+      labels: seed
+      context: dev
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        - tableExists:
+            schemaName: ${schemaName}
+            tableName: customer
+      changes:
+        - insert:
+            schemaName: ${schemaName}
+            tableName: customer
+            columns:
+              - column:
+                  name: email
+                  value: demo@example.com
+              - column:
+                  name: status
+                  value: ACTIVE
+      rollback:
+        - delete:
+            schemaName: ${schemaName}
+            tableName: customer
+            where: "email='demo@example.com'"
