@@ -1,0 +1,46 @@
+server:
+  port: 8080
+
+client:
+  baseUrl: "https://example.org"
+  restTemplate:
+    connectTimeout: 500ms
+    readTimeout: 1500ms
+    connectionRequestTimeout: 200ms # pool lease timeout
+  webClient:
+    connectTimeoutMillis: 500
+    responseTimeout: 1500ms
+    readTimeout: 1500ms
+    writeTimeout: 1500ms
+
+resilience4j:
+  retry:
+    instances:
+      downstreamClient:
+        maxAttempts: 2
+        waitDuration: 100ms
+        retryExceptions:
+          - java.io.IOException
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+        ignoreExceptions:
+          - org.springframework.web.reactive.function.client.WebClientResponseException$BadRequest
+  circuitbreaker:
+    instances:
+      downstreamClient:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 20
+        failureRateThreshold: 50
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 1200ms
+        waitDurationInOpenState: 10s
+  timelimiter:
+    instances:
+      downstreamClient:
+        timeoutDuration: 1600ms # should be >= client responseTimeout but within overall request budget
+        cancelRunningFuture: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
