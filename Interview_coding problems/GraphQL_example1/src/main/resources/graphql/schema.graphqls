@@ -1,0 +1,27 @@
+server:
+  port: 8080
+
+spring:
+  graphql:
+    path: /graphql
+    schema:
+      locations: classpath:graphql/
+    graphiql:
+      enabled: true
+      path: /graphiql
+
+  security:
+    user:
+      name: user
+      password: changeme
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    org.springframework.graphql: INFO
+    org.springframework.security: INFO
