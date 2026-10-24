@@ -1,0 +1,19 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+app:
+  jwt:
+    # Base64-encoded key, at least 256 bits for HS256. OVERRIDE via the JWT_SECRET env var in any real environment.
+    secret: ${JWT_SECRET:c0IJwTirEPqg0BJ3XFJE8Es7pn1Y+CP0Fe4gPkIj4I4=}
+    access-token-expiration-ms: 900000        # 15 minutes
+    refresh-token-expiration-ms: 604800000    # 7 days
