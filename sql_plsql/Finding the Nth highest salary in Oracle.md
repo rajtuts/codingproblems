@@ -1,62 +1,87 @@
 # Finding the Nth highest salary in Oracle
 
-You can find the highest-salaried employee(s) for each month, along with their salary amount, by joining `Employee` and `Salary` and using a subquery or a window function.
+In Oracle SQL, you can find the Nth highest salary using `DENSE_RANK()`, a correlated subquery, or `FETCH`. The best method depends on whether you want distinct salary amounts or the Nth row.
 
-### SQL Query (using `MAX()`)
+## 1. Using `DENSE_RANK()` — Recommended
+
+Find the Nth highest distinct salary.
 
 ```
-SELECT e.empID, e.empName, s.month, s.amount
-FROM Employee e
-JOIN Salary s
-    ON e.empID = s.empID
-WHERE s.amount = (
-    SELECT MAX(s2.amount)
-    FROM Salary s2
-    WHERE s2.month = s.month
+SELECT empID, empName, amount
+FROM (
+    SELECT e.empID,
+           e.empName,
+           s.amount,
+           DENSE_RANK() OVER (
+               ORDER BY s.amount DESC
+           ) AS rnk
+    FROM Employee e
+    JOIN Salary s
+        ON e.empID = s.empID
 )
-ORDER BY s.month;
+WHERE rnk = &N;
 ```
 
-### Explanation
+Replace `&N` with the required rank when prompted by Oracle SQL Developer or SQL\*Plus.
 
-1. The subquery finds the maximum salary amount for each month.
-2. The outer query retrieves the employee details whose salary matches that maximum.
-3. If multiple employees tie for the highest salary in a month, all of them are returned.
+For example, to find the 3rd highest salary, use `rnk = 3`.
 
-### Example output
+## 2. Using a subquery with `DISTINCT`
 
-Suppose the tables contain:
+```
+SELECT MAX(amount) AS nth_highest_salary
+FROM Salary
+WHERE amount < (
+    SELECT MAX(amount)
+    FROM Salary
+    WHERE amount < (
+        SELECT MAX(amount)
+        FROM Salary
+    )
+);
+```
 
-Employee
+This example finds the 3rd highest distinct salary amount. For a general Nth salary, the query becomes more complicated.
 
-| empID | empName |
-| ----- | ------- |
-| 1     | Rahul   |
-| 2     | Priya   |
-| 3     | Amit    |
+## 3. Using `ROW_NUMBER()`
 
-Salary
+```
+SELECT empID, empName, amount
+FROM (
+    SELECT e.empID,
+           e.empName,
+           s.amount,
+           ROW_NUMBER() OVER (
+               ORDER BY s.amount DESC
+           ) AS rn
+    FROM Employee e
+    JOIN Salary s
+        ON e.empID = s.empID
+)
+WHERE rn = &N;
+```
 
-| empID | month | amount |
-| ----- | ----- | ------ |
-| 1     | Jan   | 50000  |
-| 2     | Jan   | 60000  |
-| 3     | Jan   | 60000  |
-| 1     | Feb   | 55000  |
-| 2     | Feb   | 45000  |
-| 3     | Feb   | 65000  |
+This returns exactly one row for rank N, assuming enough rows exist. If salaries tie, it still assigns different row numbers, so which employee gets which number may be arbitrary unless you add a tie-breaker.
 
-Result
+## Difference between the methods
 
-| empID | empName | month | amount |
-| ----- | ------- | ----- | ------ |
-| 2     | Priya   | Jan   | 60000  |
-| 3     | Amit    | Jan   | 60000  |
-| 3     | Amit    | Feb   | 65000  |
+| Function       | How ties are handled                  | Result                                                         |
+| -------------- | ------------------------------------- | -------------------------------------------------------------- |
+| `DENSE_RANK()` | Same rank for equal salaries; no gaps | Nth distinct salary, including all employees tied at that rank |
+| `RANK()`       | Same rank for ties; gaps afterward    | Competition ranking                                            |
+| `ROW_NUMBER()` | Different number for every row        | Nth row, not necessarily Nth distinct salary                   |
 
-Note: If your `month` column contains values such as `Jan` across multiple years, include a `year` column in the grouping and subquery conditions to calculate the highest salary separately for each month of each year.
+Interview tip: If asked, “Find the 2nd highest salary in Oracle,” a common answer is:
 
+```
+SELECT MAX(amount)
+FROM Salary
+WHERE amount < (SELECT MAX(amount) FROM Salary);
+```
 
+This returns the second-highest distinct salary amount, or `NULL` if there is no lower salary.
+
+---
 
 The most optimized and recommended way in Oracle SQL is `DENSE_RANK()` when you need the Nth highest distinct salary and the employee details.
 
