@@ -114,3 +114,89 @@ Now, each department name is stored only once, and the tables are connected thro
 | 5NF         | No problematic join dependencies                                       |
 
 Interview tip: Most practical database designs focus on 1NF, 2NF, and 3NF, with BCNF used when additional dependency-related anomalies remain. Normalization is about dependencies and keys, not merely splitting large tables into smaller ones.
+
+---
+
+Let's understand “non-key attributes must not depend transitively on a candidate key” with a simple example.
+
+## 1. What is a transitive dependency?
+
+A transitive dependency occurs when a key determines one attribute, and that attribute determines another attribute.
+
+For example:
+
+\\[ A \rightarrow B \rightarrow C \\]
+
+This means:
+
+- A determines B.
+- B determines C.
+- Therefore, A indirectly determines C.
+
+If `A` is a candidate key and `B` is a non-key attribute, this can create a transitive dependency involving another non-key attribute `C`.
+
+## 2. Example using an Employee table
+
+Suppose we have this table:
+
+| EmpID (PK) | EmpName | DeptID | DeptName |
+| ---------- | ------- | ------ | -------- |
+| 101        | Rahul   | D1     | IT       |
+| 102        | Priya   | D2     | HR       |
+| 103        | Amit    | D1     | IT       |
+
+Assume these functional dependencies:
+
+\\[ EmpID \rightarrow DeptID \\]
+
+\\[ DeptID \rightarrow DeptName \\]
+
+Therefore:
+
+\\[ EmpID \rightarrow DeptID \rightarrow DeptName \\]
+
+Here, `EmpID` determines `DeptName` indirectly through `DeptID`.
+
+- `EmpID` is the candidate key.
+- `DeptID` is a non-key attribute.
+- `DeptName` is a non-key attribute.
+
+So, `DeptName` has a transitive dependency on `EmpID`.
+
+## 3. How do we fix it in 3NF?
+
+Split the original table into two tables.
+
+### Employee
+
+| EmpID (PK) | EmpName | DeptID (FK) |
+| ---------- | ------- | ----------- |
+| 101        | Rahul   | D1          |
+| 102        | Priya   | D2          |
+| 103        | Amit    | D1          |
+
+### Department
+
+| DeptID (PK) | DeptName |
+| ----------- | -------- |
+| D1          | IT       |
+| D2          | HR       |
+
+Now:
+
+- In `Employee`, `EmpID → EmpName, DeptID`.
+- In `Department`, `DeptID → DeptName`.
+
+The department name is stored only once per department, reducing redundancy.
+
+## 4. Remember this for interviews
+
+Third Normal Form (3NF): A table must be in 2NF, and no non-prime attribute should depend transitively on a candidate key through another non-superkey attribute.
+
+An easy way to remember it:
+
+- 1NF: One value per cell.
+- 2NF: No partial dependency on a candidate key.
+- 3NF: No transitive dependency of non-prime attributes on a candidate key.
+
+One important detail: a transitive dependency is not automatically a 3NF violation in every possible case. The formal 3NF rule allows a functional dependency \\(X \rightarrow A\\) if \\(X\\) is a superkey or \\(A\\) is a prime attribute (part of some candidate key).
