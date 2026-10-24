@@ -1,0 +1,56 @@
+enum LoanStatus {
+    APPLIED
+    APPROVED
+    REJECTED
+    DISBURSED
+    CLOSED
+}
+
+type Company {
+    id: ID!
+    name: String!
+    industry: String!
+    annualRevenue: Float!
+    creditRating: String!
+    loans: [Loan!]!
+}
+
+type Loan {
+    id: ID!
+    loanType: String!
+    principalAmount: Float!
+    interestRate: Float!
+    tenureMonths: Int!
+    status: LoanStatus!
+    monthlyEmi: Float!
+    company: Company!
+}
+
+input CompanyInput {
+    name: String!
+    industry: String!
+    annualRevenue: Float!
+    creditRating: String!
+}
+
+input LoanInput {
+    companyId: ID!
+    loanType: String!
+    principalAmount: Float!
+    interestRate: Float!
+    tenureMonths: Int!
+}
+
+type Query {
+    companies: [Company!]!
+    companyById(id: ID!): Company
+    loans: [Loan!]!
+    loanById(id: ID!): Loan
+    loansByStatus(status: LoanStatus!): [Loan!]!
+}
+
+type Mutation {
+    addCompany(input: CompanyInput!): Company!
+    applyForLoan(input: LoanInput!): Loan!
+    updateLoanStatus(id: ID!, status: LoanStatus!): Loan!
+}
