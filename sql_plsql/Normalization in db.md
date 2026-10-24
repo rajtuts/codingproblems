@@ -200,3 +200,123 @@ An easy way to remember it:
 - 3NF: No transitive dependency of non-prime attributes on a candidate key.
 
 One important detail: a transitive dependency is not automatically a 3NF violation in every possible case. The formal 3NF rule allows a functional dependency \\(X \rightarrow A\\) if \\(X\\) is a superkey or \\(A\\) is a prime attribute (part of some candidate key).
+
+
+Let's understand this BCNF rule step by step:
+
+“Every determinant of a non-trivial functional dependency is a superkey.”
+
+This is the rule for Boyce–Codd Normal Form (BCNF).
+
+## 1. Understand the three important terms
+
+### A. Determinant
+
+A determinant is an attribute or set of attributes that determines another attribute.
+
+For example:
+
+\\[ EmpID \rightarrow EmpName \\]
+
+Here, `EmpID` is the determinant because it determines `EmpName`.
+
+### B. Non-trivial functional dependency
+
+A functional dependency \\(X \rightarrow Y\\) is non-trivial if \\(Y\\) is not a subset of \\(X\\).
+
+For example:
+
+- `EmpID → EmpName` is non-trivial.
+- `EmpID, EmpName → EmpName` is trivial because `EmpName` is already part of the left-hand side.
+
+### C. Superkey
+
+A superkey is an attribute or combination of attributes that uniquely identifies every row in a table.
+
+For example, in an Employee table:
+
+| EmpID | EmpName | DeptID |
+| ----- | ------- | ------ |
+| 101   | Rahul   | D1     |
+| 102   | Priya   | D2     |
+| 103   | Amit    | D1     |
+
+`EmpID` is a superkey because it uniquely identifies each row.
+
+`DeptID` is not a superkey because multiple employees can belong to the same department.
+
+## 2. Example: A table that violates BCNF
+
+Consider a university table:
+
+| Student | Subject | Professor |
+| ------- | ------- | --------- |
+| Rahul   | Java    | Kumar     |
+| Priya   | Java    | Kumar     |
+| Amit    | SQL     | Sharma    |
+| Rahul   | SQL     | Sharma    |
+
+Assume the business rules are:
+
+1. A student can take multiple subjects.
+2. Each subject is taught by exactly one professor.
+3. A student cannot enroll in the same subject twice.
+
+The candidate key is `(Student, Subject)` because together they uniquely identify each row.
+
+The functional dependencies are:
+
+\\[ (Student, Subject) \rightarrow Professor \\]
+
+\\[ Subject \rightarrow Professor \\]
+
+Look at the second dependency:
+
+\\[ Subject \rightarrow Professor \\]
+
+- Determinant: `Subject`
+- Dependent attribute: `Professor`
+- Non-trivial? Yes, because `Professor` is not part of `Subject`.
+- Is `Subject` a superkey? No, because multiple students can take the same subject.
+
+Therefore, this table violates BCNF.
+
+## 3. How do we convert it to BCNF?
+
+Split the table into two tables.
+
+### StudentSubject
+
+| Student | Subject |
+| ------- | ------- |
+| Rahul   | Java    |
+| Priya   | Java    |
+| Amit    | SQL     |
+| Rahul   | SQL     |
+
+### SubjectProfessor
+
+| Subject (PK) | Professor |
+| ------------ | --------- |
+| Java         | Kumar     |
+| SQL          | Sharma    |
+
+Now, in `SubjectProfessor`, `Subject → Professor`, and `Subject` is the primary key. The determinant is a superkey, so this dependency satisfies BCNF.
+
+## 4. The easiest way to remember BCNF
+
+For every non-trivial functional dependency:
+
+\\[ X \rightarrow Y \\]
+
+Ask yourself: Can X uniquely identify every row in this table?
+
+- Yes → This dependency satisfies BCNF.
+- No → This dependency violates BCNF.
+
+Remember, the rule applies to every non-trivial functional dependency, not just the dependency involving the primary key.
+
+Interview distinction:
+
+- 3NF: Allows certain dependencies where the determinant is not a superkey if the dependent attribute is prime.
+- BCNF: Requires every determinant of a non-trivial functional dependency to be a superkey.
