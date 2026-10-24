@@ -1,0 +1,156 @@
+<main class="page">
+  <header class="topbar">
+    <div class="brand-mark">DF</div>
+    <div>
+      <div class="eyebrow">FORM BUILDER DEMO</div>
+      <h1>Dynamic Forms</h1>
+    </div>
+    <span class="api-status"><span class="status-dot"></span> Spring Boot API</span>
+  </header>
+
+  <section class="intro">
+    <div>
+      <p class="eyebrow">METADATA-DRIVEN FORMS</p>
+      <h2>One UI. Many forms.</h2>
+      <p class="subtitle">Fields, options and validation are rendered from the form definition returned by your backend.</p>
+    </div>
+    <div class="intro-icon" aria-hidden="true">✳</div>
+  </section>
+
+  <section class="form-picker panel">
+    <div class="picker-copy">
+      <label for="formCode">Form code</label>
+      <p>Load any form configured in the database.</p>
+    </div>
+    <div class="picker-actions">
+      <input id="formCode" name="formCode" [(ngModel)]="formCode" placeholder="e.g. employee"
+             (keyup.enter)="loadForm()" />
+      <button type="button" class="button button-secondary" (click)="loadForm()" [disabled]="loading">
+        {{ loading ? 'Loading…' : 'Load form' }}
+      </button>
+    </div>
+  </section>
+
+  <div class="alert alert-error" *ngIf="errorMessage" role="alert">{{ errorMessage }}</div>
+  <div class="alert alert-success" *ngIf="successMessage" role="status">{{ successMessage }}</div>
+
+  <div class="loading panel" *ngIf="loading">Loading form definition…</div>
+
+  <div class="content-grid" *ngIf="definition && !loading">
+    <section class="panel form-panel">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">FORM {{ definition.code | uppercase }}</p>
+          <h2>{{ definition.title }}</h2>
+          <p class="subtitle">Fields marked with <span class="required">*</span> are required.</p>
+        </div>
+        <span class="field-count">{{ fields.length }} fields</span>
+      </div>
+
+      <form [formGroup]="dynamicForm" (ngSubmit)="submit()" novalidate>
+        <div class="field-grid">
+          <div class="field" *ngFor="let field of fields"
+               [class.field-full]="['TEXTAREA'].includes(field.type.toUpperCase())">
+            <label [for]="field.key">
+              {{ field.label }}
+              <span class="required" *ngIf="field.required">*</span>
+              <span class="readonly-tag" *ngIf="field.readOnly">READ ONLY</span>
+            </label>
+
+            <ng-container [ngSwitch]="field.type.toUpperCase()">
+              <select *ngSwitchCase="'DROPDOWN'" [id]="field.key" [formControlName]="field.key">
+                <option value="">Select {{ field.label.toLowerCase() }}</option>
+                <option *ngFor="let option of optionsFor(field)" [value]="option">{{ option }}</option>
+              </select>
+
+              <div *ngSwitchCase="'RADIO'" class="radio-list">
+                <label class="choice" *ngFor="let option of optionsFor(field)">
+                  <input type="radio" [formControlName]="field.key" [value]="option" />
+                  <span>{{ option }}</span>
+                </label>
+              </div>
+
+              <label *ngSwitchCase="'CHECKBOX'" class="checkbox-control" [for]="field.key">
+                <input type="checkbox" [id]="field.key" [formControlName]="field.key" />
+                <span>Yes</span>
+              </label>
+
+              <textarea *ngSwitchCase="'TEXTAREA'" [id]="field.key" [formControlName]="field.key"
+                        [readOnly]="field.readOnly" rows="4" [placeholder]="'Enter ' + field.label.toLowerCase()"></textarea>
+
+              <input *ngSwitchCase="'NUMBER'" type="number" [id]="field.key" [formControlName]="field.key"
+                     [readOnly]="field.readOnly" [placeholder]="'Enter ' + field.label.toLowerCase()" />
+
+              <input *ngSwitchCase="'EMAIL'" type="email" [id]="field.key" [formControlName]="field.key"
+                     [readOnly]="field.readOnly" [placeholder]="'Enter ' + field.label.toLowerCase()" />
+
+              <input *ngSwitchCase="'DATE'" type="date" [id]="field.key" [formControlName]="field.key"
+                     [readOnly]="field.readOnly" />
+
+              <input *ngSwitchDefault type="text" [id]="field.key" [formControlName]="field.key"
+                     [readOnly]="field.readOnly" [placeholder]="'Enter ' + field.label.toLowerCase()" />
+            </ng-container>
+
+            <p class="field-hint" *ngIf="field.readOnly">This value is controlled by the server.</p>
+            <p class="field-error" *ngIf="control(field).touched && control(field).hasError('required')">
+              {{ field.label }} is required.
+            </p>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="button button-secondary" (click)="resetForm()">Reset</button>
+          <button type="submit" class="button button-primary" [disabled]="submitting">
+            {{ submitting ? 'Submitting…' : 'Submit form' }}
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </form>
+
+      <section class="response-card" *ngIf="lastSubmission">
+        <div class="response-heading">
+          <div>
+            <p class="eyebrow">API RESPONSE</p>
+            <h3>Submission #{{ lastSubmission.id }}</h3>
+          </div>
+          <button type="button" class="text-button" (click)="loadSubmissions()">Refresh history</button>
+        </div>
+        <pre>{{ lastSubmission | json }}</pre>
+      </section>
+    </section>
+
+    <aside class="panel side-panel">
+      <div class="panel-heading compact">
+        <div>
+          <p class="eyebrow">DATABASE</p>
+          <h2>Saved submissions</h2>
+        </div>
+        <span class="count-badge">{{ savedSubmissions.length }}</span>
+      </div>
+      <p class="subtitle">Choose a saved record to retrieve its values into the form.</p>
+
+      <div class="empty-state" *ngIf="savedSubmissions.length === 0">
+        <div class="empty-icon">↳</div>
+        <strong>No submissions yet</strong>
+        <p>Submit the form to see records here.</p>
+      </div>
+
+      <button type="button" class="submission-row" *ngFor="let item of savedSubmissions"
+              (click)="viewSubmission(item.id)">
+        <span class="submission-icon">#</span>
+        <span class="submission-info">
+          <strong>Submission {{ item.id }}</strong>
+          <small>{{ item.submittedAt | date:'medium' }}</small>
+        </span>
+        <span class="row-arrow">↗</span>
+      </button>
+
+      <div class="tip-box">
+        <strong>How it works</strong>
+        <p>The UI reads field metadata from <code>GET /api/forms/{{ definition.code }}</code> and submits values to the Spring Boot API.</p>
+      </div>
+    </aside>
+  </div>
+
+  <footer>Dynamic Forms Demo <span>·</span> Angular + Spring Boot + H2</footer>
+</main>
