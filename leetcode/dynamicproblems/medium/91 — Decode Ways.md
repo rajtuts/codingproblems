@@ -19,17 +19,12 @@ Output: 3
 
 The three possible decodings are:
 
-`2 | 2 | 6`
+`2 | 2 |
+6`        -> B B F
 
-B B F
+`22 | 6`  -> V F
 
-`22 | 6`
-
-V F
-
-`2 | 26`
-
-B Z
+`2 | 26`  -> B Z
 
 Answer: 3 ways
 
