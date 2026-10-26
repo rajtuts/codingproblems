@@ -3,6 +3,8 @@
 Hard
 Topic: Dynamic Programming
 
+<img width="1088" height="511" alt="image" src="https://github.com//rajtuts/codingproblems/edit/main/leetcode/72%20—%20Edit%20Distance/Leetcode 72_1.png" />
+
 Problem: Given two strings word1 and word2, find the minimum number of operations needed to convert word1 into word2.
 
 You can perform three operations:
