@@ -115,7 +115,95 @@ In an optimized implementation, we don't restart the counting process for every 
 ## 4. Python solution
 
 ```
-from collections import Counterclass Solution:    def findSubstring(self, s: str, words: list[str]) -> list[int]:        if not s or not words:            return []        word_len = len(words[0])        word_count = len(words)        window_size = word_len * word_count        if len(s) < window_size:            return []        required = Counter(words)        result = []        for offset in range(word_len):            left = offset            seen = Counter()            count = 0            for right in range(offset, len(s) - word_len + 1, word_len):                word = s[right:right + word_len]                if word not in required:                    seen.clear()                    count = 0                    left = right + word_len                    continue                seen[word] += 1                count += 1                while seen[word] > required[word]:
+
+import java.util.*;
+
+class Solution {
+    public List<Integer> findSubstring(String s, String[] words) {
+        List<Integer> result = new ArrayList<>();
+
+        if (s == null || words == null ||
+            s.length() == 0 || words.length == 0) {
+            return result;
+        }
+
+        int wordLen = words[0].length();
+        int wordCount = words.length;
+        int windowSize = wordLen * wordCount;
+
+        if (s.length() < windowSize) {
+            return result;
+        }
+
+        Map<String, Integer> required = new HashMap<>();
+
+        for (String word : words) {
+            required.put(word,
+                required.getOrDefault(word, 0) + 1);
+        }
+
+        // Try each possible alignment of word-sized chunks
+        for (int offset = 0; offset < wordLen; offset++) {
+            int left = offset;
+            int count = 0;
+
+            Map<String, Integer> seen = new HashMap<>();
+
+            for (int right = offset;
+                 right + wordLen <= s.length();
+                 right += wordLen) {
+
+                String word = s.substring(right, right + wordLen);
+
+                // If the word is not required, reset the window
+                if (!required.containsKey(word)) {
+                    seen.clear();
+                    count = 0;
+                    left = right + wordLen;
+                    continue;
+                }
+
+                seen.put(word, seen.getOrDefault(word, 0) + 1);
+                count++;
+
+                // Shrink while this word occurs too many times
+                while (seen.get(word) > required.get(word)) {
+                    String leftWord =
+                        s.substring(left, left + wordLen);
+
+                    seen.put(leftWord, seen.get(leftWord) - 1);
+                    count--;
+                    left += wordLen;
+                }
+
+                // All words are present with valid frequencies
+                if (count == wordCount) {
+                    result.add(left);
+
+                    // Move forward to allow overlapping matches
+                    String leftWord =
+                        s.substring(left, left + wordLen);
+
+                    seen.put(leftWord, seen.get(leftWord) - 1);
+                    count--;
+                    left += wordLen;
+                }
+            }
+        }
+
+        return result;
+    }
+}
+```
+
+Example
+```
+Input:
+s = "barfoothefoobarman"
+words = ["foo", "bar"]
+
+Output:
+[0, 9]
 ```
 
 ## 5. How the code works
