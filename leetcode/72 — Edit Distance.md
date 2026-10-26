@@ -100,8 +100,6 @@ dp[i][j]=dp[i-1][j]+1
 
 
 Case 4: Replace
-<img width="1088" height="511" alt="image" src="https://github.com/user-attachments/assets/abad7b64-0594-4061-958a-828b9668b2ad" />
-
 
 When the characters differ, replace one with the other.
 \[
@@ -121,16 +119,7 @@ dp[i-1][j-1] & \text{replace}
 \end{cases}
 \]
 
-4. Visualize a smaller example
-Convert word1 = "ab" to word2 = "ac".
-
-Each cell shows the minimum operations needed to convert the prefix on the left into the prefix above.
-word1 ↓ / word2 →	""	a	ac
-""	0	1	2
-a	1	0	1
-ab	2	1	1
-
-The final answer is dp[2][2] = 1: replace b with c.
+<img width="1088" height="511" alt="image" src="https://github.com/user-attachments/assets/abad7b64-0594-4061-958a-828b9668b2ad" />
 
 5. Java solution
 
