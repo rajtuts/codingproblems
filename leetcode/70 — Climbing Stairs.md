@@ -1,7 +1,5 @@
 # LeetCode 70 — Climbing Stairs
 
-[Clip Art Stairs - Cliparts.co](https://images.openai.com/static-rsc-4/QJGYyysyhPQUlu8GQEM7zflV9roFSPLL0-qn-9fne24NvPlhwF5OY8AAGB30ZwG0DMQPl_jx4a_HGDMS9O1X1Atdgs0gLRd7-RMh2hCMBhAILlaKqJ8vj5DzDlE3S2SDgla0Rk38bydwJl0R1lIdrB-z-w2NSL3KkF6cVMIPsUk?purpose=inline)
-
 Easy
 
 Topic: Dynamic Programming
