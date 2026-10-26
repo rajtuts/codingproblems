@@ -100,6 +100,8 @@ dp[i][j]=dp[i-1][j]+1
 
 
 Case 4: Replace
+<img width="1088" height="511" alt="image" src="https://github.com/user-attachments/assets/abad7b64-0594-4061-958a-828b9668b2ad" />
+
 
 When the characters differ, replace one with the other.
 \[
