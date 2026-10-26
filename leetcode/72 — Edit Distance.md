@@ -20,27 +20,6 @@ Output = 3
 
 <img width="1081" height="430" alt="image" src="https://github.com/user-attachments/assets/69c5fb54-bf31-40b7-8fdb-dece9f0d5d29" />
 
-One way to convert "horse" into "ros" is:
-horse
-
-rorse
-
-Replace h with r
-
-rorse
-
-rose
-
-Delete r
-
-rose
-
-ros
-
-Delete e
-
-
-Total operations = 3
 
 2. Dynamic programming idea
 Let dp[i][j] represent:
