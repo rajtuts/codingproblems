@@ -1,0 +1,240 @@
+#separator:comma
+#html:true
+#notetype:Basic
+#deck:SQL Interview (Oracle)
+#tags column:3
+"PATTERN: Nth highest salary (Oracle)","<pre>SELECT salary FROM (
+  SELECT salary, DENSE_RANK() OVER (ORDER BY salary DESC) rnk
+  FROM emp)
+WHERE rnk = :n;</pre>Use DENSE_RANK so ties don't skip ranks. Add DISTINCT on outer if needed.","pattern window"
+"PATTERN: Top N rows per group (exactly N, no ties)","<pre>SELECT * FROM (
+  SELECT e.*, ROW_NUMBER() OVER (PARTITION BY dept_id ORDER BY salary DESC) rn
+  FROM emp e)
+WHERE rn &lt;= 3;</pre>Window functions can't go in WHERE, so filter in an outer query.","pattern window"
+"PATTERN: Top 3 salaries per department INCLUDING ties","<pre>SELECT * FROM (
+  SELECT e.*, DENSE_RANK() OVER (PARTITION BY dept_id ORDER BY salary DESC) dr
+  FROM emp e)
+WHERE dr &lt;= 3;</pre>","pattern window"
+"PATTERN: Find duplicate rows","<pre>SELECT email, COUNT(*)
+FROM users
+GROUP BY email
+HAVING COUNT(*) &gt; 1;</pre>","pattern"
+"PATTERN: Delete duplicates, keep one (Oracle)","<pre>DELETE FROM users
+WHERE ROWID NOT IN (
+  SELECT MIN(ROWID) FROM users GROUP BY email);</pre>ROWID is Oracle-only. Other DBs: use ROW_NUMBER() in a CTE, or self-join on id.","pattern oracle_syntax"
+"PATTERN: Running total","<pre>SUM(amount) OVER (PARTITION BY cust_id ORDER BY order_date
+                  ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)</pre>Specify ROWS explicitly; default is RANGE, which treats ties as peers.","pattern window"
+"PATTERN: Moving average (3-row)","<pre>AVG(sales) OVER (ORDER BY day
+                ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)</pre>","pattern window"
+"PATTERN: Compare to previous / next row","<pre>LAG(sal, 1, 0)  OVER (PARTITION BY dept ORDER BY hire_date)  -- previous
+LEAD(sal, 1, 0) OVER (PARTITION BY dept ORDER BY hire_date)  -- next</pre>Args: (column, offset, default).","pattern window"
+"PATTERN: Consecutive values / gaps and islands","<pre>SELECT MIN(id) start_id, MAX(id) end_id
+FROM (SELECT id, id - ROW_NUMBER() OVER (ORDER BY id) grp FROM t)
+GROUP BY grp;</pre>Consecutive ids give the same (id - row_number) constant. Group by it.","pattern window"
+"PATTERN: Consecutive dates (login streak)","<pre>date_col - ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY date_col) grp</pre>In Oracle DATE minus number works directly. Group by grp, HAVING COUNT(*) >= N.","pattern window dates"
+"PATTERN: Rows in A that never appear in B (anti-join)","<pre>-- Option 1
+SELECT a.* FROM a WHERE NOT EXISTS (SELECT 1 FROM b WHERE b.a_id = a.id);
+-- Option 2
+SELECT a.* FROM a LEFT JOIN b ON b.a_id = a.id WHERE b.a_id IS NULL;</pre>Avoid NOT IN if the subquery can return NULL: it returns zero rows.","pattern joins"
+"PATTERN: Pivot rows to columns (portable)","<pre>SELECT dept_id,
+  SUM(CASE WHEN job=&#x27;CLERK&#x27;   THEN 1 ELSE 0 END) clerks,
+  SUM(CASE WHEN job=&#x27;MANAGER&#x27; THEN 1 ELSE 0 END) managers
+FROM emp GROUP BY dept_id;</pre>","pattern"
+"PATTERN: Oracle PIVOT clause","<pre>SELECT * FROM (SELECT dept_id, job, sal FROM emp)
+PIVOT (SUM(sal) FOR job IN (&#x27;CLERK&#x27; AS clerk, &#x27;MANAGER&#x27; AS mgr));</pre>","pattern oracle_syntax"
+"PATTERN: Oracle UNPIVOT (columns to rows)","<pre>SELECT * FROM sales
+UNPIVOT (amount FOR quarter IN (q1 AS &#x27;Q1&#x27;, q2 AS &#x27;Q2&#x27;, q3 AS &#x27;Q3&#x27;, q4 AS &#x27;Q4&#x27;));</pre>","pattern oracle_syntax"
+"PATTERN: Median in Oracle","<pre>SELECT MEDIAN(salary) FROM emp;
+-- or
+SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY salary) FROM emp;</pre>","pattern oracle_syntax"
+"PATTERN: Percent of total","<pre>amount / SUM(amount) OVER ()                       -- of grand total
+amount / SUM(amount) OVER (PARTITION BY dept)    -- of dept total
+RATIO_TO_REPORT(amount) OVER ()                  -- Oracle shortcut</pre>","pattern window"
+"PATTERN: Employees earning more than their manager","<pre>SELECT e.name
+FROM emp e JOIN emp m ON e.manager_id = m.emp_id
+WHERE e.salary &gt; m.salary;</pre>Self join. Note: Oracle table aliases take NO 'AS' keyword.","pattern joins"
+"PATTERN: Employees earning above their department average","<pre>SELECT * FROM (
+  SELECT e.*, AVG(salary) OVER (PARTITION BY dept_id) avg_sal FROM emp e)
+WHERE salary &gt; avg_sal;</pre>","pattern window"
+"PATTERN: Second highest salary, NULL if none","<pre>SELECT (SELECT MAX(salary) FROM emp
+        WHERE salary &lt; (SELECT MAX(salary) FROM emp)) AS second_high
+FROM dual;</pre>The outer SELECT from dual guarantees one row (NULL) even if nothing matches.","pattern oracle_syntax"
+"PATTERN: Customers who bought ALL products (relational division)","<pre>SELECT cust_id FROM orders
+GROUP BY cust_id
+HAVING COUNT(DISTINCT product_id) = (SELECT COUNT(*) FROM products);</pre>","pattern"
+"PATTERN: First / last value per group using KEEP (Oracle)","<pre>SELECT dept_id,
+  MAX(salary) KEEP (DENSE_RANK FIRST ORDER BY hire_date) sal_of_earliest_hire,
+  MAX(salary) KEEP (DENSE_RANK LAST  ORDER BY hire_date) sal_of_latest_hire
+FROM emp GROUP BY dept_id;</pre>","pattern oracle_syntax"
+"PATTERN: Comma-separated list per group (Oracle)","<pre>SELECT dept_id, LISTAGG(name, &#x27;, &#x27;) WITHIN GROUP (ORDER BY name) names
+FROM emp GROUP BY dept_id;</pre>Fails with ORA-01489 if the result exceeds 4000 bytes (12.2+: ON OVERFLOW TRUNCATE).","pattern oracle_syntax"
+"PATTERN: Month-over-month / year-over-year change","<pre>SELECT mth, rev,
+  rev - LAG(rev) OVER (ORDER BY mth) AS change,
+  ROUND(100*(rev - LAG(rev) OVER (ORDER BY mth)) / LAG(rev) OVER (ORDER BY mth), 2) pct
+FROM monthly_rev;</pre>Guard divide by zero with NULLIF(LAG(...), 0).","pattern window"
+"PATTERN: Odd / even rows or ids","<code>WHERE MOD(id, 2) = 1</code> (odd), <code>MOD(id,2) = 0</code> (even). Oracle has MOD(), not the % operator.","pattern oracle_syntax"
+"PATTERN: Swap adjacent seats / ids","<pre>SELECT CASE WHEN MOD(id,2)=1 AND id = (SELECT MAX(id) FROM seat) THEN id
+            WHEN MOD(id,2)=1 THEN id + 1
+            ELSE id - 1 END AS id, student
+FROM seat ORDER BY id;</pre>","pattern"
+"PATTERN: Generate numbers 1..N in Oracle","<pre>SELECT LEVEL n FROM dual CONNECT BY LEVEL &lt;= 10;</pre>","pattern oracle_syntax hierarchy"
+"PATTERN: Generate a date series in Oracle","<pre>SELECT DATE &#x27;2026-01-01&#x27; + LEVEL - 1 AS d
+FROM dual CONNECT BY LEVEL &lt;= 31;</pre>","pattern oracle_syntax dates hierarchy"
+"PATTERN: Hierarchy / org chart (Oracle)","<pre>SELECT LEVEL, LPAD(&#x27; &#x27;, 2*(LEVEL-1)) || name AS name,
+       SYS_CONNECT_BY_PATH(name, &#x27;/&#x27;) path
+FROM emp
+START WITH manager_id IS NULL
+CONNECT BY PRIOR emp_id = manager_id
+ORDER SIBLINGS BY name;</pre>PRIOR sits on the PARENT side. PRIOR emp_id = manager_id walks top-down. Also: CONNECT_BY_ROOT, CONNECT_BY_ISLEAF.","pattern oracle_syntax hierarchy"
+"PATTERN: Hierarchy with recursive CTE (works in Oracle 11gR2+)","<pre>WITH org (emp_id, name, manager_id, lvl) AS (
+  SELECT emp_id, name, manager_id, 1 FROM emp WHERE manager_id IS NULL
+  UNION ALL
+  SELECT e.emp_id, e.name, e.manager_id, o.lvl + 1
+  FROM emp e JOIN org o ON e.manager_id = o.emp_id)
+SELECT * FROM org;</pre>Oracle: NO 'RECURSIVE' keyword, but column list is required. Postgres/MySQL: WITH RECURSIVE.","pattern hierarchy dialect_delta"
+"PATTERN: Upsert with MERGE (Oracle)","<pre>MERGE INTO target t
+USING source s ON (t.id = s.id)
+WHEN MATCHED THEN UPDATE SET t.val = s.val
+WHEN NOT MATCHED THEN INSERT (id, val) VALUES (s.id, s.val);</pre>","pattern oracle_syntax"
+"PATTERN: Update one table from another (Oracle)","<pre>UPDATE t1
+SET val = (SELECT s.val FROM t2 s WHERE s.id = t1.id)
+WHERE EXISTS (SELECT 1 FROM t2 s WHERE s.id = t1.id);</pre>Oracle has no UPDATE ... JOIN. Use correlated subquery or MERGE. Without the EXISTS, unmatched rows get NULL.","pattern oracle_syntax"
+"PATTERN: Users active on 2 consecutive days","<pre>SELECT DISTINCT user_id FROM (
+  SELECT user_id, login_date,
+         LAG(login_date) OVER (PARTITION BY user_id ORDER BY login_date) prev_d
+  FROM logins)
+WHERE login_date - prev_d = 1;</pre>","pattern window dates"
+"PATTERN: Retention / first-event cohort","<pre>SELECT user_id, MIN(event_date) first_date
+FROM events GROUP BY user_id;
+-- then join back and compare event_date - first_date = 1</pre>","pattern"
+"PATTERN: Count rows including zero (group with no matches)","<pre>SELECT d.dept_name, COUNT(e.emp_id)
+FROM dept d LEFT JOIN emp e ON e.dept_id = d.dept_id
+GROUP BY d.dept_name;</pre>COUNT(col) ignores NULLs, so use the right-side column. COUNT(*) would give 1 for empty groups.","pattern joins nulls"
+"PATTERN: Filter on aggregate vs filter on row","WHERE filters rows BEFORE grouping. HAVING filters groups AFTER aggregation. Put non-aggregate conditions in WHERE for speed.","pattern theory"
+"ORACLE: Limit rows (12c+ and older)","<pre>-- 12c+
+SELECT * FROM emp ORDER BY sal DESC FETCH FIRST 5 ROWS ONLY;
+-- Older
+SELECT * FROM (SELECT * FROM emp ORDER BY sal DESC) WHERE ROWNUM &lt;= 5;</pre>","oracle_syntax"
+"ORACLE: ROWNUM pitfall","ROWNUM is assigned BEFORE ORDER BY. So <code>WHERE ROWNUM &lt;= 5 ORDER BY sal DESC</code> does not give top 5. Sort in a subquery first. Also <code>ROWNUM = 2</code> or <code>ROWNUM &gt; 1</code> return nothing.","oracle_syntax"
+"ORACLE: Pagination (rows 11-20)","<pre>SELECT * FROM emp ORDER BY id
+OFFSET 10 ROWS FETCH NEXT 10 ROWS ONLY;</pre>","oracle_syntax"
+"ORACLE: Empty string vs NULL","In Oracle, '' (empty string) IS NULL. So <code>WHERE col = &#x27;&#x27;</code> never matches. Use <code>IS NULL</code>. This differs from Postgres, MySQL, SQL Server.","oracle_syntax nulls dialect_delta"
+"ORACLE: Table alias rule","Table aliases: NO 'AS' (<code>FROM emp e</code>). Column aliases may use AS. Writing <code>FROM emp AS e</code> gives ORA-00933.","oracle_syntax"
+"ORACLE: Subquery in FROM needs an alias?","No. Oracle allows <code>FROM (SELECT ...)</code> without an alias. MySQL, Postgres, SQL Server REQUIRE one. Add one anyway to be portable.","oracle_syntax dialect_delta"
+"ORACLE: Can I use a SELECT alias in WHERE / GROUP BY / HAVING?","No. Aliases work only in ORDER BY. Repeat the expression, or wrap in a subquery/CTE. (Execution order: FROM, WHERE, GROUP BY, HAVING, SELECT, ORDER BY.)","oracle_syntax theory"
+"ORACLE: Dummy table","<code>SELECT SYSDATE FROM dual;</code> Oracle requires FROM. (Oracle 23c now allows SELECT without FROM.)","oracle_syntax"
+"ORACLE: ROWID vs ROWNUM","ROWID = physical address of the row (permanent, fastest access, used for dedupe). ROWNUM = temporary sequence number assigned to result rows as they are fetched.","oracle_syntax theory"
+"ORACLE: Set operators","UNION (distinct), UNION ALL (keeps dups, faster), INTERSECT, MINUS (Oracle's EXCEPT). Both queries need same column count and compatible types.","oracle_syntax joins"
+"ORACLE: NULL-handling functions","<pre>NVL(a, b)            -- a if not null else b
+NVL2(a, x, y)        -- x if a not null else y
+NULLIF(a, b)         -- NULL if a = b else a
+COALESCE(a, b, c)    -- first non-null (ANSI, portable)
+DECODE(a, 1,&#x27;one&#x27;, 2,&#x27;two&#x27;, &#x27;other&#x27;)  -- Oracle&#x27;s CASE (NULL = NULL is true in DECODE)</pre>","oracle_syntax nulls"
+"ORACLE: NULL traps","<pre>col = NULL            -&gt; never true. Use IS NULL.
+NOT IN (list w/ NULL) -&gt; returns no rows. Use NOT EXISTS.
+COUNT(*) counts rows; COUNT(col) skips NULLs.
+SUM/AVG ignore NULLs. AVG of (10, NULL, 20) = 15.
+NULL || &#x27;abc&#x27; = &#x27;abc&#x27; in Oracle (NULL treated as empty in concat).
+ORDER BY: NULLs sort LAST in ASC in Oracle (use NULLS FIRST/LAST).</pre>","oracle_syntax nulls"
+"ORACLE: Date basics","<pre>SYSDATE                       -- current date + time (DB server)
+TRUNC(SYSDATE)                -- strip time -&gt; midnight
+SYSDATE + 7                   -- add 7 days
+d1 - d2                       -- difference in DAYS (number, may be fractional)
+ADD_MONTHS(d, 3)
+MONTHS_BETWEEN(d1, d2)
+LAST_DAY(d)
+TRUNC(d, &#x27;MM&#x27;)                -- first day of month
+TRUNC(d, &#x27;YYYY&#x27;)              -- first day of year
+NEXT_DAY(d, &#x27;MONDAY&#x27;)
+EXTRACT(YEAR FROM d)</pre>","oracle_syntax dates"
+"ORACLE: Date literals and formatting","<pre>DATE &#x27;2026-01-31&#x27;
+TO_DATE(&#x27;31-01-2026&#x27;, &#x27;DD-MM-YYYY&#x27;)
+TO_CHAR(d, &#x27;YYYY-MM-DD HH24:MI:SS&#x27;)
+TO_CHAR(d, &#x27;DY&#x27;)     -- MON    &#x27;Day&#x27; -&gt; Monday    &#x27;MON&#x27; -&gt; JAN
+TO_CHAR(d, &#x27;Q&#x27;)      -- quarter</pre>","oracle_syntax dates"
+"ORACLE: Compare a DATE column to a day (time part trap)","<pre>WHERE order_dt &gt;= DATE &#x27;2026-01-01&#x27;
+  AND order_dt &lt;  DATE &#x27;2026-01-02&#x27;</pre>Avoid TRUNC(order_dt) = ... on indexed columns (kills the index). Use a half-open range.","oracle_syntax dates perf"
+"ORACLE: String functions","<pre>SUBSTR(s, start, len)         -- start can be negative (from end)
+INSTR(s, sub [, start, nth])  -- position, 0 if not found
+LENGTH(s)  UPPER(s)  LOWER(s)  INITCAP(s)
+TRIM(s)  LTRIM(s)  RTRIM(s)
+LPAD(s, 5, &#x27;0&#x27;)  RPAD(s, 5, &#x27;*&#x27;)
+REPLACE(s, &#x27;a&#x27;, &#x27;b&#x27;)
+TRANSLATE(s, &#x27;abc&#x27;, &#x27;xyz&#x27;)    -- char-by-char mapping
+s1 || s2                      -- concat (CONCAT takes only 2 args)</pre>","oracle_syntax strings"
+"ORACLE: Regex functions","<pre>REGEXP_LIKE(col, &#x27;^[A-Z]{3}[0-9]+$&#x27;)
+REGEXP_SUBSTR(col, &#x27;[0-9]+&#x27;, 1, 1)
+REGEXP_REPLACE(col, &#x27;[^0-9]&#x27;, &#x27;&#x27;)
+REGEXP_INSTR(col, &#x27;@&#x27;)
+REGEXP_COUNT(col, &#x27;,&#x27;)</pre>","oracle_syntax strings"
+"ORACLE: Split 'a,b,c' into rows","<pre>SELECT REGEXP_SUBSTR(&#x27;a,b,c&#x27;, &#x27;[^,]+&#x27;, 1, LEVEL) val
+FROM dual
+CONNECT BY LEVEL &lt;= REGEXP_COUNT(&#x27;a,b,c&#x27;, &#x27;,&#x27;) + 1;</pre>","oracle_syntax strings hierarchy"
+"ORACLE: Case-sensitivity","Oracle string comparison is CASE-SENSITIVE: 'abc' <> 'ABC'. Use UPPER(col) = 'ABC' (MySQL is case-insensitive by default).","oracle_syntax strings dialect_delta"
+"ORACLE: Create table as select (CTAS)","<pre>CREATE TABLE emp_copy AS SELECT * FROM emp;
+CREATE TABLE emp_empty AS SELECT * FROM emp WHERE 1 = 0;   -- structure only</pre>","oracle_syntax"
+"ORACLE: Auto-increment / sequences","<pre>-- 12c+
+id NUMBER GENERATED ALWAYS AS IDENTITY
+-- classic
+CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
+INSERT INTO emp (id) VALUES (emp_seq.NEXTVAL);
+emp_seq.CURRVAL</pre>","oracle_syntax"
+"ORACLE: Window default frame gotcha","With ORDER BY and no frame, default is RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW. So LAST_VALUE returns the CURRENT row. Fix: add <code>ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING</code>.","oracle_syntax window"
+"ORACLE: Division","Oracle NUMBER division is decimal: 5/2 = 2.5. In SQL Server / older Postgres integer / integer = 2. Use TRUNC(5/2) or FLOOR for integer result in Oracle.","oracle_syntax dialect_delta"
+"ORACLE: Old outer-join syntax","<pre>WHERE a.id = b.id(+)   -- LEFT JOIN a to b  (+ goes on the optional side)</pre>","oracle_syntax joins"
+"ORACLE: Optimizer hints","<pre>SELECT /*+ INDEX(e emp_dept_ix) */ * FROM emp e WHERE dept_id = 10;
+/*+ FULL(e) */   /*+ PARALLEL(e, 4) */   /*+ LEADING(a b) USE_NL(b) */</pre>","oracle_syntax perf"
+"ORACLE: View execution plan","<pre>EXPLAIN PLAN FOR SELECT * FROM emp WHERE dept_id = 10;
+SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);</pre>","oracle_syntax perf"
+"DELTA: Top N rows  (Oracle | MySQL | Postgres | SQL Server)","Oracle: FETCH FIRST n ROWS ONLY / ROWNUM<=n<br>MySQL: LIMIT n<br>Postgres: LIMIT n<br>SQL Server: SELECT TOP n","dialect_delta"
+"DELTA: Current date/time","Oracle: SYSDATE / SYSTIMESTAMP<br>MySQL: NOW() / CURDATE()<br>Postgres: NOW() / CURRENT_DATE<br>SQL Server: GETDATE()","dialect_delta dates"
+"DELTA: Date difference in days","Oracle: d1 - d2<br>MySQL: DATEDIFF(d1, d2)<br>Postgres: d1 - d2 (DATE) or EXTRACT(DAY FROM ...)<br>SQL Server: DATEDIFF(day, d2, d1)  (note arg order!)","dialect_delta dates"
+"DELTA: Add days / months","Oracle: d + n, ADD_MONTHS(d, n)<br>MySQL: DATE_ADD(d, INTERVAL n DAY)<br>Postgres: d + INTERVAL '1 day'<br>SQL Server: DATEADD(day, n, d)","dialect_delta dates"
+"DELTA: NULL replacement","Oracle: NVL / COALESCE<br>MySQL: IFNULL / COALESCE<br>Postgres: COALESCE<br>SQL Server: ISNULL / COALESCE<br>COALESCE works everywhere.","dialect_delta nulls"
+"DELTA: String concatenation","Oracle: ||<br>MySQL: CONCAT()<br>Postgres: ||<br>SQL Server: + or CONCAT()","dialect_delta strings"
+"DELTA: Substring","Oracle: SUBSTR<br>MySQL: SUBSTRING / SUBSTR<br>Postgres: SUBSTRING / SUBSTR<br>SQL Server: SUBSTRING (3 args required)","dialect_delta strings"
+"DELTA: Set difference","Oracle: MINUS<br>Postgres / SQL Server: EXCEPT<br>MySQL: NOT EXISTS (EXCEPT only in 8.0.31+)","dialect_delta"
+"DELTA: Date formatting","Oracle: TO_CHAR(d,'YYYY-MM-DD')<br>MySQL: DATE_FORMAT(d,'%Y-%m-%d')<br>Postgres: TO_CHAR(d,'YYYY-MM-DD')<br>SQL Server: FORMAT(d,'yyyy-MM-dd') / CONVERT","dialect_delta dates"
+"DELTA: String aggregation","Oracle: LISTAGG(x, ',') WITHIN GROUP (ORDER BY x)<br>MySQL: GROUP_CONCAT(x SEPARATOR ',')<br>Postgres / SQL Server: STRING_AGG(x, ',')","dialect_delta strings"
+"DELTA: Dummy table for SELECT without a table","Oracle: FROM dual (23c optional)<br>MySQL / Postgres / SQL Server: not needed","dialect_delta"
+"DELTA: Auto-increment column","Oracle: IDENTITY (12c+) or SEQUENCE<br>MySQL: AUTO_INCREMENT<br>Postgres: SERIAL / IDENTITY<br>SQL Server: IDENTITY(1,1)","dialect_delta"
+"DELTA: Update with join","Oracle: MERGE or correlated subquery<br>MySQL: UPDATE t1 JOIN t2 ON ... SET ...<br>Postgres: UPDATE t1 SET ... FROM t2 WHERE ...<br>SQL Server: UPDATE t1 SET ... FROM t1 JOIN t2 ...","dialect_delta"
+"DELTA: Recursive CTE keyword","Oracle: WITH name (cols) AS (...)  no RECURSIVE<br>SQL Server: WITH name AS (...)  no RECURSIVE<br>Postgres / MySQL 8: WITH RECURSIVE<br>Oracle also has CONNECT BY.","dialect_delta hierarchy"
+"DELTA: Median","Oracle: MEDIAN(x) or PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x)<br>Postgres: PERCENTILE_CONT(0.5) WITHIN GROUP (...)<br>MySQL: no built-in, use window function trick<br>SQL Server: PERCENTILE_CONT(...) OVER ()","dialect_delta"
+"DELTA: Pivot","Oracle and SQL Server have PIVOT keyword. MySQL and Postgres: use SUM(CASE WHEN ...) (Postgres also has crosstab in tablefunc).","dialect_delta"
+"DELTA: Identifier quoting","Oracle / Postgres: &quot;double quotes&quot; (case-sensitive when quoted)<br>MySQL: `backticks`<br>SQL Server: [brackets]<br>String literals: single quotes everywhere.","dialect_delta"
+"DELTA: Empty string","Oracle: '' = NULL<br>All the others: '' is an empty, non-NULL string.","dialect_delta nulls"
+"THEORY: SQL logical execution order","FROM / JOIN -> WHERE -> GROUP BY -> HAVING -> SELECT (incl. window functions) -> DISTINCT -> ORDER BY -> FETCH/LIMIT.<br>Why aliases work in ORDER BY only, and window functions can't be in WHERE.","theory"
+"THEORY: WHERE vs HAVING","WHERE filters rows before grouping (no aggregates). HAVING filters groups after aggregation.","theory"
+"THEORY: ROW_NUMBER vs RANK vs DENSE_RANK","Scores 100, 90, 90, 80:<br>ROW_NUMBER: 1,2,3,4<br>RANK: 1,2,2,4 (gap)<br>DENSE_RANK: 1,2,2,3 (no gap)","theory window"
+"THEORY: UNION vs UNION ALL","UNION removes duplicates (sort/distinct step, slower). UNION ALL keeps all rows (faster). Default to UNION ALL when duplicates are impossible or acceptable.","theory"
+"THEORY: Join types","INNER: matches only. LEFT: all left + matches. RIGHT: all right + matches. FULL OUTER: all from both. CROSS: cartesian product. SELF: table joined to itself. Semi-join: EXISTS. Anti-join: NOT EXISTS.","theory joins"
+"THEORY: IN vs EXISTS","EXISTS stops at first match, handles NULLs safely, good when the outer set is small and inner is indexed. IN suits a small, static list. NOT IN breaks if the list contains NULL. Modern optimizers often rewrite them the same.","theory joins"
+"THEORY: Subquery vs CTE vs temp table vs view","Subquery: inline, one use. CTE (WITH): named, readable, reusable within a single statement. Global temporary table (Oracle): stores rows for session/transaction, indexable. View: stored query, no data. Materialized view: stored query WITH data, refreshed.","theory"
+"THEORY: Correlated vs non-correlated subquery","Non-correlated runs once independently. Correlated references the outer row, so it conceptually runs per outer row (often rewritten as a join/window).","theory"
+"THEORY: Index types in Oracle","B-tree (default, high cardinality). Bitmap (low cardinality, DW, bad for heavy DML). Function-based (index on UPPER(col)). Composite (column order matters: leftmost prefix). Unique. Reverse-key.","theory perf"
+"THEORY: Sargable conditions","A condition that can use an index. NOT sargable: WHERE TRUNC(dt) = ..., WHERE UPPER(name) = 'X' (without function index), WHERE col + 1 = 5, LIKE '%abc'. Sargable: WHERE dt >= ... AND dt < ..., LIKE 'abc%'.","theory perf"
+"THEORY: Clustered vs non-clustered index (and Oracle's equivalent)","Clustered: table rows physically ordered by key (one per table). Non-clustered: separate structure with pointers. Oracle's equivalent of a clustered index is an Index-Organized Table (IOT); normal tables are heaps.","theory perf"
+"THEORY: DELETE vs TRUNCATE vs DROP","DELETE: DML, row by row, WHERE allowed, rollback-able, fires triggers. TRUNCATE: DDL, removes all rows fast, auto-commits, resets high-water mark, no WHERE. DROP: removes the table itself.","theory"
+"THEORY: ACID","Atomicity (all or nothing). Consistency (valid state to valid state). Isolation (concurrent transactions don't interfere). Durability (committed data survives crashes). Oracle default isolation: READ COMMITTED.","theory"
+"THEORY: Normal forms","1NF: atomic values, no repeating groups. 2NF: 1NF + no partial dependency on part of a composite key. 3NF: 2NF + no transitive dependency (non-key depends only on the key). BCNF: every determinant is a candidate key.","theory"
+"THEORY: Constraints","PRIMARY KEY (unique + not null, one per table). UNIQUE (allows NULL). FOREIGN KEY (referential integrity). NOT NULL. CHECK. DEFAULT.","theory"
+"THEORY: COMMIT / ROLLBACK / SAVEPOINT","COMMIT makes changes permanent. ROLLBACK undoes uncommitted changes. SAVEPOINT name; ROLLBACK TO name; undoes part. DDL (CREATE, TRUNCATE, ALTER) in Oracle auto-commits.","theory"
+"THEORY: Partitioning in Oracle","Range (dates), List (regions), Hash (even spread), Composite. Benefits: partition pruning, easier archiving (drop/exchange partition), parallelism.","theory perf"
+"THEORY: Materialized view","Stored query result. Refresh: COMPLETE / FAST (needs MV logs) / FORCE. ON DEMAND or ON COMMIT. Can enable query rewrite.","theory perf"
+"THEORY: Query tuning checklist","1) Read EXPLAIN PLAN (full scans, cardinality). 2) Add/adjust indexes. 3) Avoid functions on indexed columns. 4) Select only needed columns. 5) Filter early. 6) Prefer EXISTS / joins over big IN lists. 7) Gather stats (DBMS_STATS). 8) Use bind variables.","theory perf"
+"THEORY: Bind variables","Placeholders (:id) so Oracle reuses one parsed plan instead of hard parsing each literal. Improves performance and prevents SQL injection.","theory perf"
+"THEORY: Stored procedure vs function vs trigger (PL/SQL)","Procedure: performs actions, may return via OUT params, not usable in SELECT. Function: must RETURN a value, usable in SQL. Trigger: fires automatically on DML/DDL events. Package: groups related procs/functions.","theory plsql"
+"THEORY: PL/SQL block structure","<pre>DECLARE
+  v_sal NUMBER;
+BEGIN
+  SELECT salary INTO v_sal FROM emp WHERE emp_id = 1;
+EXCEPTION
+  WHEN NO_DATA_FOUND THEN NULL;
+  WHEN TOO_MANY_ROWS THEN NULL;
+END;</pre>","plsql oracle_syntax"
+"THEORY: Implicit vs explicit cursor","Implicit: Oracle creates automatically for each DML / SELECT INTO (attributes SQL%ROWCOUNT, SQL%FOUND). Explicit: declared, OPEN / FETCH / CLOSE, or FOR rec IN cur LOOP.","plsql"
+"STRATEGY: First 30 seconds of any SQL question","1) Restate the problem. 2) Ask about NULLs, ties, duplicates, empty results. 3) Say: 'I'll use Oracle syntax; I know the MySQL/Postgres equivalents.' 4) Name the pattern aloud (e.g., top-N per group -> ROW_NUMBER).","strategy"
+"STRATEGY: If I blank on syntax","Say what the function should do, write a close version, and note 'exact syntax may vary by DB'. Interviewers grade logic over punctuation. Then fix it once you recall.","strategy"
+"STRATEGY: Build the query in layers","1) FROM + JOIN. 2) WHERE. 3) GROUP BY + aggregates. 4) Window function. 5) Wrap in subquery/CTE and filter on the window result. 6) ORDER BY. Check each layer mentally with 3 sample rows.","strategy"
+"STRATEGY: Pattern recognition cues","'Nth / top N' -> DENSE_RANK / ROW_NUMBER. 'Consecutive' -> gaps and islands or LAG. 'Never / no' -> NOT EXISTS. 'Running / cumulative' -> SUM OVER. 'Compared to previous' -> LAG. 'Each X has at least' -> GROUP BY + HAVING. 'Hierarchy / manager chain' -> CONNECT BY / recursive CTE.","strategy pattern"
