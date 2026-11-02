@@ -1,4 +1,4 @@
-#14 Create IAM User Using Terraform
+# 14 Create IAM User Using Terraform
 
 You need to create an AWS IAM group named `iamgroup_mariyam` using Terraform.
 
