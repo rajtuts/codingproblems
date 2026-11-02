@@ -1,0 +1,113 @@
+# 19 
+
+The Nautilus DevOps team needs to set up an SNS topic for sending notifications. They need to create an SNS topic with the following specifications:
+
+1) The topic name should be devops-notifications.
+
+Use Terraform to create this SNS topic. The Terraform working directory is /home/bob/terraform. Create the main.tf file (do not create a different .tf file) to accomplish this task.
+
+Note: Right-click under the EXPLORER section in VS Code and select Open in Integrated Terminal to launch the terminal.
+
+--- 
+You need to create an AWS SNS (Simple Notification Service) topic named `devops-notifications` using Terraform.
+
+### Step 1: Navigate to the Terraform directory
+
+```
+cd /home/bob/terraform
+```
+
+### Step 2: Create `main.tf`
+
+```
+vi main.tf
+```
+
+Add the following Terraform configuration:
+
+```
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "5.91.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_sns_topic" "devops_notifications" {
+  name = "devops-notifications"
+}
+
+```
+
+Save and exit:
+
+- Press `Esc`
+- Type `:wq`
+- Press `Enter`
+
+### Step 3: Initialize Terraform
+
+```
+terraform init
+```
+
+### Step 4: Validate configuration
+
+```
+terraform validate
+```
+
+Expected:
+
+```
+Success! The configuration is valid.
+```
+
+### Step 5: Create the SNS topic
+
+```
+terraform plan
+terraform apply
+```
+
+Enter `yes` when prompted.
+
+Expected result
+
+```
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+```
+
+### Step 6: Verify SNS topic creation
+
+```
+aws sns list-topics --region us-east-1
+```
+
+To find only your topic:
+
+```
+aws sns list-topics \
+  --region us-east-1 \
+  --query "Topics[?contains(TopicArn, 'devops-notifications')]"
+```
+
+### Understanding the Terraform resource
+
+| Configuration          | Purpose                          |
+| ---------------------- | -------------------------------- |
+| `aws_sns_topic`        | Creates an SNS topic             |
+| `devops_notifications` | Terraform internal resource name |
+| `name`                 | Actual AWS SNS topic name        |
+| `us-east-1`            | AWS provider region              |
+
+Important interview point: An SNS topic acts as a publisher/subscriber communication channel. Publishers send messages to the topic, and subscribers such as SQS queues, Lambda functions, HTTP endpoints, or email endpoints receive notifications.
+
+Only `main.tf` is required for this task.
