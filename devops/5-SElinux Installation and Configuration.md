@@ -1,3 +1,5 @@
+# 5: SElinux Installation and Configuration
+
 Following a security audit, the xFusionCorp Industries security team has opted to enhance application and server security with SELinux. To initiate testing, the following requirements have been established for App server 3 in the Stratos Datacenter:
 
 
