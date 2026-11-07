@@ -1,5 +1,11 @@
 # Terraform
 
+## VSCode Extensions
+1. Hashicorp Terraform
+2. Redhat yaml
+3. 
+---
+
 1. Create Key Pair Using Terraform  
 2. Create Security Group Using Terraform  
 3. Create VPC Using Terraform  
