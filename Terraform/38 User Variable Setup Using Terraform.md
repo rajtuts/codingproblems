@@ -1,4 +1,4 @@
-# 38 
+# 38 User Variable Setup Using Terraform
 
 he Nautilus DevOps team is automating IAM user creation using Terraform for better identity management.
 
