@@ -1,0 +1,1 @@
+import{memo}from"react";export const StatCard=memo(({label,value,change}:{label:string;value:string;change:string})=><article className="stat"><span>{label}</span><strong>{value}</strong><small>{change}</small></article>);
