@@ -1,0 +1,1 @@
+import{render,screen}from"@testing-library/react";import{it,expect}from"vitest";import{StatCard}from"./StatCard";it("renders metric card",()=>{render(<StatCard label="Total users" value="1,284" change="+12% this month"/>);expect(screen.getByText("Total users")).toBeInTheDocument();expect(screen.getByText("1,284")).toBeInTheDocument()});

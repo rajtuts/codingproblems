@@ -1,0 +1,1 @@
+export interface User{id:number;name:string;email:string;role:"ADMIN"|"USER"}export interface Page<T>{content:T[];totalPages:number;totalElements:number}export interface AuthUser{username:string;role:"ADMIN"|"USER"}export interface LoginResponse extends AuthUser{token:string}
